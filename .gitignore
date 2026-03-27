@@ -1,0 +1,16 @@
+# LaTeX build artefacts — generated automatically by pdflatex
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.bbl
+*.blg
+
+# Keep the source and the compiled PDF
+!research_report.tex
+!research_report.pdf
