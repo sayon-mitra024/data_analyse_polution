@@ -8,7 +8,7 @@
 
 ## Abstract
 
-Air pollution is a critical public health and policy challenge in India, where rapid urbanisation and industrial growth have placed acute pressure on ambient air quality. This study analyses real-time pollutant concentration data from the Central Pollution Control Board (CPCB) monitoring network across 29 states and union territories, integrating findings with state-level socioeconomic and health indicators drawn from the National Family Health Survey (NFHS-5, 2019–21). Seven major pollutants — PM10, PM2.5, CO, NO2, NH3, OZONE, and SO2 — were examined across 267 cities and over 3,400 monitoring observations. Key findings indicate that particulate matter (PM10 and PM2.5) dominates the pollution landscape, with mean concentrations of 96.11 µg/m³ and 76.60 µg/m³, respectively — exceeding WHO guideline values by substantial margins. Delhi, Himachal Pradesh, and Jharkhand recorded the highest composite pollution averages. Exploratory correlation analysis reveals inverse relationships between pollution levels and indicators of socioeconomic development (female education, electricity access, improved sanitation, and clean cooking fuel). K-Means clustering identified three distinct state-level pollution-vulnerability profiles. Predictive modelling using Random Forest and Linear Regression demonstrated that, with only 22 matched states, reliable held-out prediction is inherently limited, underscoring the urgent need for longitudinal, multi-year data infrastructure. The study contributes an integrated, reproducible analytical framework applicable to future large-scale air quality research in low- and middle-income country contexts.
+Air pollution is a critical public health and policy challenge in India, where rapid urbanisation and industrial growth have placed acute pressure on ambient air quality. This study analyses real-time pollutant concentration data from the Central Pollution Control Board (CPCB) monitoring network, integrating findings with state-level socioeconomic and health indicators drawn from the National Family Health Survey (NFHS-5, 2019–21). Seven major pollutants — PM10, PM2.5, CO, NO2, NH3, OZONE, and SO2 — were examined across 3,273 valid monitoring observations spanning 29 states and 267 cities. Key findings indicate that particulate matter dominates the pollution landscape, with mean PM10 and PM2.5 concentrations of 96.11 µg/m³ and 76.60 µg/m³, respectively — exceeding WHO annual guideline values by six- and fifteenfold. Delhi, Himachal Pradesh, and Jharkhand recorded the highest composite pollution averages. Correlation analysis with 29 matched state-level socioeconomic profiles reveals that infant and under-five mortality are the only indicators reaching statistical significance (r = +0.45, p < 0.05), while development indicators (female education, electricity access, improved sanitation) show weak inverse trends. K-Means clustering identified three distinct state-level pollution-vulnerability profiles. Predictive modelling using Pipeline-based cross-validation confirms that socioeconomic proxies alone are insufficient for reliable state-level pollution prediction at n = 29, pointing to the need for longitudinal, city-level panel data. The study contributes an integrated, reproducible analytical framework applicable to future large-scale air quality research in low- and middle-income country contexts.
 
 ---
 
@@ -46,7 +46,7 @@ The AQI dataset was sourced from the Government of India's open data portal (dat
 | `pollutant_max` | Maximum reading in the reporting window |
 | `pollutant_avg` | Mean reading in the reporting window (primary analysis variable) |
 
-**Coverage:** 31 states, 267 cities, 7 pollutants. The dataset contains **138 rows** (approximately 4%) with missing `pollutant_avg` values, which were excluded from analysis.
+**Coverage:** 29 states, 267 cities, 7 pollutants. The dataset snapshot is dated 27 March 2026 (UTC+5:30). It contains **138 rows** (approximately 4%) with `pollutant_avg` reported as `NA`, which were excluded from analysis, leaving **3,273 valid observations**.
 
 ### 2.2 NFHS-5 Health and Socioeconomic Dataset (health.xls)
 
@@ -54,7 +54,7 @@ This dataset contains **111 rows** and **136 columns** representing state-level 
 
 ### 2.3 Dataset Integration
 
-After normalising state names to lowercase and applying manual harmonisation for naming inconsistencies between the two sources (e.g., "NCT of Delhi" → "delhi", "Maharastra" → "maharashtra"), a total of **22 states** were successfully matched and merged. This constitutes the dataset used for correlation analysis, clustering, and predictive modelling. The reduction from 31/37 to 22 states primarily reflects CPCB monitoring coverage gaps and residual name mismatches.
+State names in the CPCB dataset use underscores as word separators (e.g., `Andhra_Pradesh`), while NFHS-5 uses spaces (`Andhra Pradesh`). After normalising both sources to lowercase, replacing underscores with spaces, and applying a targeted name-harmonisation dictionary for four residual mismatches ("NCT of Delhi" → "delhi"; "Maharastra" → "maharashtra"; "Andaman & Nicobar Islands" → "andaman and nicobar"; "Jammu & Kashmir" → "jammu and kashmir"), a total of **29 states and union territories** were successfully matched and merged. This expanded coverage — compared to the 22-state baseline achievable without underscore normalisation — substantially improves the statistical power of subsequent correlation and clustering analyses. The eight unmatched NFHS territories (Goa, Manipur, Meghalaya, Ladakh, Lakshadweep, Dadra and Nagar Haveli & Daman and Diu, Andaman and Nicobar, India-aggregate) lack corresponding CPCB monitoring stations in the current snapshot.
 
 ---
 
@@ -62,15 +62,15 @@ After normalising state names to lowercase and applying manual harmonisation for
 
 ### 3.1 Data Preprocessing
 
-**AQI data:** Rows with missing `pollutant_avg` were dropped (138 rows; 4.0%). State names were normalised to lowercase-stripped strings. A single composite measure per state — the arithmetic mean of all `pollutant_avg` readings across pollutants, cities, and stations within the state — was computed as `mean_pollutant_avg`. This aggregation captures the overall pollution burden at the state level.
+**AQI data:** Rows with `pollutant_avg` equal to `NA` (a string sentinel used by CPCB for unavailable readings) were dropped (138 rows; 4.0%). State names were normalised to lowercase with underscores replaced by spaces; an additional single-entry replacement maps `tamilnadu` (CPCB raw) to `tamil nadu` (standard). A single composite measure per state — the arithmetic mean of all `pollutant_avg` readings across pollutants, cities, and stations within the state — was computed as `mean_pollutant_avg`. This aggregation captures the overall pollution burden at the state level.
 
-**Health data:** Only "Total" (combined urban+rural) rows were retained. Fourteen columns containing mixed text/numeric data (e.g., clean cooking fuel) were coerced to numeric type using `pd.to_numeric(..., errors='coerce')`. The resulting merged dataset had 22 state-level observations.
+**Health data:** Only "Total" (combined urban+rural) rows were retained. Fourteen columns containing mixed text/numeric data (e.g., clean cooking fuel) were coerced to numeric type using `pd.to_numeric(..., errors='coerce')`. After name harmonisation, the resulting merged dataset contained 29 state-level observations.
 
 **AQI categorisation:** Each pollutant reading was classified using standard CPCB sub-index thresholds: Good (0–50), Satisfactory (51–100), Moderate (101–200), Poor (201–300), Very Poor (301–400), and Severe (>400).
 
 ### 3.2 Statistical Analysis
 
-Descriptive statistics (mean, standard deviation, minimum, maximum, median) were computed for each pollutant and at the state level. Pearson correlation coefficients were computed between `mean_pollutant_avg` and ten selected socioeconomic/health indicators to assess the strength and direction of linear associations.
+Pearson correlation coefficients and associated two-tailed p-values were computed between `mean_pollutant_avg` and ten selected socioeconomic/health indicators to assess the strength and direction of linear associations. Statistical significance was assessed at α = 0.05 (critical |r| ≈ 0.37 for n = 29).
 
 ### 3.3 Clustering
 
@@ -96,7 +96,7 @@ Four regression models were evaluated:
 - **Random Forest Regressor** (200 trees, max\_depth = 4)
 - **Gradient Boosting Regressor** (200 estimators, max\_depth = 3)
 
-All features were standardised before modelling. Data were split 80/20 (train/test) with a fixed random seed (42). Five-fold cross-validation R² (CV R²) was computed for each model. Performance metrics include MAE, RMSE, test R², and CV R².
+All models were implemented as scikit-learn `Pipeline` objects with feature standardisation (`StandardScaler`) as the first step, ensuring that the scaler is re-fitted independently within each fold of cross-validation and eliminating data leakage. Data were split 80/20 (train/test) with a fixed random seed (42). Five-fold cross-validation R² (CV R²) was computed for each pipeline on the full dataset. Performance metrics include MAE, RMSE, test R², and CV R².
 
 Feature importance was extracted from the Random Forest model. Linear Regression standardised coefficients were plotted to indicate directional effects.
 
@@ -162,29 +162,32 @@ Delhi's position as the most polluted state is consistent with established liter
 
 ### 4.4 Correlation Analysis
 
-**Table 4: Pearson Correlation with Mean Pollutant Average (Selected Indicators)**
+**Table 4: Pearson Correlation with Mean Pollutant Average (n = 29 states)**
 
-| Indicator | r |
-|---|---|
-| Female Education (%) | −0.28 |
-| Electricity Access (%) | −0.22 |
-| Improved Sanitation (%) | −0.18 |
-| Clean Cooking Fuel (%) | −0.15 |
-| Women Literacy (%) | −0.23 |
-| Women Schooling ≥10yr (%) | −0.19 |
-| Tobacco Use — Men (%) | +0.12 |
-| Alcohol Use — Men (%) | +0.08 |
-| Infant Mortality (per 1,000) | +0.16 |
-| Under-5 Mortality (per 1,000) | +0.14 |
+| Indicator | r | p-value | Significant? |
+|---|---|---|---|
+| Female Education (%) | −0.18 | 0.353 | No |
+| Electricity Access (%) | −0.13 | 0.519 | No |
+| Improved Sanitation (%) | −0.34 | 0.069 | No (†p<0.10) |
+| Clean Cooking Fuel (%) | −0.24 | 0.215 | No |
+| Women Literacy (%) | −0.18 | 0.350 | No |
+| Women Schooling ≥10yr (%) | −0.15 | 0.438 | No |
+| Tobacco Use — Men (%) | +0.03 | 0.859 | No |
+| Alcohol Use — Men (%) | −0.10 | 0.620 | No |
+| Infant Mortality (per 1,000) | **+0.45** | **0.017** | **Yes*** |
+| Under-5 Mortality (per 1,000) | **+0.44** | **0.021** | **Yes*** |
 
-All development indicators exhibit weak-to-moderate negative correlations with pollution levels, suggesting that states with higher educational attainment, infrastructure access, and household energy transitions tend to have lower composite pollution averages. However, several important caveats apply:
+*\* p < 0.05; † p < 0.10. Critical |r| ≈ 0.37 for n = 29 at α = 0.05.*
 
-- Correlation coefficients are small in magnitude (|r| < 0.30), reflecting the confounded nature of state-level ecological associations.
-- Urbanisation acts as a confounder: highly urbanised states (Delhi) rank both high in infrastructure metrics and high in pollution — attenuating negative correlations.
-- The ecological fallacy applies: state-level aggregates mask within-state heterogeneity between urban hotspots and cleaner rural areas.
-- With n = 22 states, none of these correlations reach conventional statistical significance thresholds (α = 0.05; critical r ≈ 0.43).
+The most notable finding is that infant mortality rate (r = +0.45, p = 0.017) and under-five mortality rate (r = +0.44, p = 0.021) are the only indicators reaching conventional statistical significance. These positive associations suggest that states bearing higher composite pollution burdens also tend to have higher child mortality rates — consistent with the substantial literature linking particulate matter exposure to adverse perinatal and early-childhood health outcomes [1,5]. Improved sanitation shows a near-significant negative correlation (r = −0.34, p = 0.069), indicating a borderline inverse relationship.
 
-These results are therefore interpreted as exploratory direction indicators rather than confirmed causal associations.
+All development indicators (female education, electricity access, clean cooking fuel) exhibit weak negative correlations, suggesting that states with higher educational attainment and infrastructure tend to have lower composite pollution averages, though none of these reach statistical significance at the current sample size. Several important caveats apply:
+
+- **Urbanisation confounding:** Highly urbanised states (Delhi) rank both high in infrastructure metrics and high in pollution — attenuating negative correlations.
+- **Ecological fallacy:** State-level aggregates mask within-state heterogeneity between urban hotspots and cleaner rural areas.
+- **Temporal mismatch:** CPCB data represent a single cross-sectional snapshot (March 2026), while NFHS-5 indicators were collected in 2019–21.
+
+These results are therefore interpreted as exploratory associations rather than confirmed causal relationships.
 
 ### 4.5 K-Means Clustering
 
@@ -202,18 +205,18 @@ Cluster 0 groups high-pollution states that show moderately developed infrastruc
 
 ### 4.6 Predictive Modelling
 
-**Table 6: Regression Model Performance (n = 22 states, 80/20 split)**
+**Table 6: Regression Model Performance (n = 29 states, 80/20 split)**
 
 | Model | MAE | RMSE | Test R² | CV R² (5-fold) |
 |---|---|---|---|---|
-| Linear Regression | 8.06 | 10.90 | −0.28 | −4.42 |
-| Ridge Regression | 7.95 | 10.63 | −0.22 | −2.89 |
-| Random Forest | 7.95 | 10.27 | −0.14 | −1.32 |
-| Gradient Boosting | 7.38 | 11.08 | −0.33 | −2.34 |
+| Linear Regression | 16.24 | 18.81 | −0.367 | −1.998 |
+| Ridge Regression | 15.79 | 18.00 | −0.253 | −1.618 |
+| Random Forest | 12.77 | 15.35 | +0.090 | −1.515 |
+| Gradient Boosting | 14.95 | 19.04 | −0.402 | −2.873 |
 
-All models yield negative R² values on both the held-out test set and in 5-fold cross-validation. A negative R² indicates that the model performs worse than a naïve mean predictor. This outcome is not unexpected given the extremely small sample size (n = 22 states, ~4–5 observations in the test fold), which renders any reliable generalisation impossible. With a dataset of this size, variance in the response variable across the few test states dominates over any learnable signal.
+All models yield negative cross-validation R² values, indicating that no model reliably generalises beyond the training sample. Random Forest achieves a marginally positive held-out R² (+0.090), though this reflects the limited size of the test fold (six states). A negative CV R² confirms that the model still performs worse than a naïve mean predictor on unseen folds.
 
-These results should be interpreted as a finding in themselves: **socioeconomic features as measured here are insufficient to reliably predict state-level composite pollution levels at n = 22.** A larger longitudinal panel — incorporating temporal variation across years and within-state city-level observations — would be necessary for meaningful predictive modelling.
+These results should be interpreted as a finding in themselves: **socioeconomic features as measured here are insufficient to reliably predict state-level composite pollution levels at n = 29.** A larger longitudinal panel — incorporating temporal variation across years and within-state city-level observations — would be necessary for meaningful predictive modelling.
 
 Despite poor predictive accuracy, **feature importance from Random Forest** provides exploratory directional insight. Clean cooking fuel access and electricity access emerge as the top-ranked features, followed by female education and women's literacy. This is consistent with the understanding that household energy transition (from biomass to LPG/electricity) directly reduces indoor and near-household particulate emissions, and that states with higher electrification tend to have greater capacity to enforce environmental regulation.
 
@@ -226,14 +229,14 @@ Linear Regression standardised coefficients corroborate these directions: clean 
 This study presents an integrated analysis of CPCB real-time air quality data and NFHS-5 socioeconomic indicators across Indian states, contributing a reproducible, multi-method analytical framework. The principal findings are:
 
 1. **Particulate matter dominates India's air quality burden.** PM10 and PM2.5 mean concentrations exceed WHO guidelines by six- and fifteenfold respectively. Northern and eastern states bear a disproportionate pollution burden.
-2. **Socioeconomic development indicators show weak inverse correlations** with state-level pollution levels. Confounding by urbanisation substantially complicates ecological-level inference.
+2. **Child mortality indicators are the only statistically significant correlates** of state-level pollution exposure (infant mortality: r = +0.45, p = 0.017; under-five mortality: r = +0.44, p = 0.021). Development indicators show weak inverse trends but do not reach significance at n = 29.
 3. **K-Means clustering reveals three distinct state profiles:** a high-pollution/moderate-development cluster (northern industrial states), a lower-pollution/lower-development cluster (north-eastern states), and a lower-pollution/higher-development cluster (southern and western states).
-4. **Predictive modelling is fundamentally constrained** by the small matched sample (22 states). No model achieved positive held-out R², confirming that socioeconomic proxies at state level — without temporal depth or city-level granularity — are insufficient to reliably predict composite pollution levels.
+4. **Predictive modelling is fundamentally constrained** by the small matched sample (29 states). No model achieved reliable held-out cross-validation R², confirming that socioeconomic proxies at state level — without temporal depth or city-level granularity — are insufficient to predict composite pollution levels.
 5. **Clean cooking fuel and electricity access** are identified as the most informative exploratory features, reinforcing the policy relevance of household energy transition programmes (Ujjwala Yojana, Saubhagya) as co-benefit strategies for air quality improvement.
 
 ### 5.1 Limitations
 
-- Merged dataset covers only 22 states due to naming inconsistencies between CPCB and NFHS; broader harmonisation would yield a larger analytical sample.
+- Merged dataset covers 29 of 37 NFHS states; the eight unmatched territories (Goa, Manipur, Meghalaya, Ladakh, Lakshadweep, Dadra and Nagar Haveli, Andaman and Nicobar, India-aggregate) lack CPCB monitoring coverage in the current snapshot.
 - AQI data represents a single cross-sectional snapshot; causal inference requires longitudinal panel data.
 - Temporal alignment between CPCB readings and NFHS-5 estimates (2019–21) is approximate.
 - State-level aggregation masks substantial intra-state heterogeneity between urban and rural areas.
@@ -285,7 +288,7 @@ This study presents an integrated analysis of CPCB real-time air quality data an
 
 ### A.2 Weaknesses / Issues Identified
 
-- **Small merged sample (n = 22 states):** Insufficient for reliable machine learning generalisation; predictive modelling results are exploratory only.
+- **Small merged sample (n = 29 states):** Insufficient for reliable machine learning generalisation; predictive modelling results are exploratory only.
 - **Cross-sectional design:** Cannot establish causal relationships between pollution and socioeconomic factors.
 - **Composite pollution measure:** Averaging across pollutant types in `mean_pollutant_avg` obscures the distinct health profiles of particulate matter vs. gaseous pollutants.
 - **State-name harmonisation gaps:** Several states (e.g., West Bengal, Uttar Pradesh pre-fix) were lost in the merge due to naming inconsistencies; more careful NLP-based matching would recover these.
@@ -296,9 +299,12 @@ This study presents an integrated analysis of CPCB real-time air quality data an
 | Dimension | Original Notebook | Enhanced Version |
 |---|---|---|
 | Code structure | 62 cells with many duplicates and no clear sections | 53 cells, cleanly structured with 11 numbered sections |
-| Imports | Scattered across cells | Single consolidated imports cell |
-| Data cleaning | Basic dropna; no dtype coercion | Explicit dtype coercion; documented missing-value strategy |
-| Visualisations | Plain unlabelled histograms and bars | 11 publication-quality figures with titles, axis labels, colour palettes, and saved outputs |
+| Imports | Scattered across cells | Single consolidated imports cell; `Pipeline` added |
+| Data cleaning | Basic dropna; no dtype coercion | Explicit dtype coercion; documented missing-value strategy; underscore→space normalisation |
+| State coverage | 22 matched states (missed underscore/space mismatch) | **29 matched states** via systematic name harmonisation |
+| Cross-validation | Manual `scaler.transform(X)` on full dataset (data leakage) | **Pipeline-based CV** — scaler refitted per fold, no leakage |
+| Correlation analysis | r values only, no significance testing | **r values with two-tailed p-values**; 2 significant results identified |
+| Visualisations | Plain unlabelled histograms and bars | 11 publication-quality figures with titles, axis labels, colour palettes |
 | AQI categorisation | Not performed | Full CPCB AQI category classification and distribution analysis |
 | Per-pollutant analysis | Absent | State × pollutant normalised heatmap |
 | Clustering | Absent | K-Means with Elbow Method and cluster profile tables |
