@@ -1,6 +1,6 @@
 # Air Quality Analysis Across Indian States: Pollutant Distribution, Socioeconomic Correlates, and Predictive Modelling
 
-**Authors:** CPCB AQI Research Group  
+**Authors:** Sayon Mitra (UID: 25LBCS1407, B.Tech CSE, Chandigarh University) — [25lbcs1407@culkomail.in](mailto:25lbcs1407@culkomail.in) | [sayon@sayonedu.in](mailto:sayon@sayonedu.in)  
 **Data Sources:** Central Pollution Control Board (CPCB) – data.gov.in; NFHS-5 (National Family Health Survey, 2019–21)  
 **Keywords:** Air Quality Index, PM2.5, PM10, India, NFHS-5, K-Means Clustering, Random Forest, Socioeconomic Indicators
 
